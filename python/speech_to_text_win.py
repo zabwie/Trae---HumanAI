@@ -7,9 +7,11 @@ import time
 
 class SpeechToText:
     def __init__(self):
+        """Initialize Windows speech recognition"""
         pass
     
     def start_listening(self):
+        """Start listening for speech input using Windows SAPI"""
         try:
             # Create a temporary VBS script with a different approach
             vbs_content = '''

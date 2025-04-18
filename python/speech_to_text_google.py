@@ -4,6 +4,7 @@ import speech_recognition as sr
 
 class SpeechToText:
     def __init__(self):
+        """Initialize Google speech recognition with optimized settings"""
         self.recognizer = sr.Recognizer()
         # Adjust for ambient noise and sensitivity
         self.recognizer.energy_threshold = 4000
@@ -11,6 +12,14 @@ class SpeechToText:
         self.recognizer.pause_threshold = 0.8
     
     def start_listening(self, timeout=5, phrase_time_limit=10, tts=None):
+        """
+        Start listening for speech input using Google's speech recognition
+        
+        Args:
+            timeout (int): Maximum time to wait for speech to start
+            phrase_time_limit (int): Maximum time for a single phrase
+            tts: Optional text-to-speech object for audio feedback
+        """
         try:
             with sr.Microphone() as source:
                 print("Adjusting for ambient noise... Please wait.")

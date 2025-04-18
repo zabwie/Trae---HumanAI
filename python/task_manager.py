@@ -7,39 +7,31 @@ import logging
 from pathlib import Path
 
 class TaskManager:
-    def __init__(self, data_dir: str = "h:\\VSCodeProjects\\HumanAI\\python\\data"):
+    def __init__(self, data_dir=None):
+        # Use user's home directory if no specific directory is provided
+        if data_dir is None:
+            home_dir = os.path.expanduser("~")
+            data_dir = os.path.join(home_dir, "HumanAI", "data")
+        
         self.data_dir = data_dir
+        
+        # Create data directory if it doesn't exist
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+        
+        # Initialize data files
         self.tasks_file = os.path.join(data_dir, "tasks.json")
         self.goals_file = os.path.join(data_dir, "goals.json")
         self.notes_file = os.path.join(data_dir, "notes.json")
-        self.log_file = os.path.join(data_dir, "action_log.json")
+        self.action_log_file = os.path.join(data_dir, "action_log.json")
         
-        # Create data directory if it doesn't exist
-        os.makedirs(data_dir, exist_ok=True)
-        
-        # Initialize files if they don't exist
-        self._init_files()
+        # Create files if they don't exist
+        for file_path in [self.tasks_file, self.goals_file, self.notes_file, self.action_log_file]:
+            if not os.path.exists(file_path):
+                with open(file_path, "w") as f:
+                    json.dump([], f)
         
         self.logger = logging.getLogger(__name__)
-    
-    def _init_files(self):
-        """Initialize data files with empty structures"""
-        default_data = {
-            "tasks": [],
-            "goals": [],
-            "notes": [],
-            "action_log": []
-        }
-        
-        for file, key in [
-            (self.tasks_file, "tasks"),
-            (self.goals_file, "goals"),
-            (self.notes_file, "notes"),
-            (self.log_file, "action_log")
-        ]:
-            if not os.path.exists(file):
-                with open(file, "w") as f:
-                    json.dump({key: []}, f, indent=2)
     
     def add_task(self, title: str, due_date: Optional[str] = None, priority: str = "medium", 
                 description: str = "", category: str = "general") -> bool:
@@ -237,7 +229,7 @@ class TaskManager:
     def log_action(self, action: str, details: Dict = None) -> bool:
         """Log an action or conversation"""
         try:
-            with open(self.log_file, "r") as f:
+            with open(self.action_log_file, "r") as f:
                 data = json.load(f)
             
             log_entry = {
@@ -248,7 +240,7 @@ class TaskManager:
             
             data["action_log"].append(log_entry)
             
-            with open(self.log_file, "w") as f:
+            with open(self.action_log_file, "w") as f:
                 json.dump(data, f, indent=2)
             
             return True
@@ -259,7 +251,7 @@ class TaskManager:
     def get_action_log(self, limit: int = 10) -> List[Dict]:
         """Get recent action log entries"""
         try:
-            with open(self.log_file, "r") as f:
+            with open(self.action_log_file, "r") as f:
                 data = json.load(f)
             
             return data["action_log"][-limit:]

@@ -3,12 +3,12 @@ import sys
 import win32com.client
 import threading
 import time
-import winsound  # Added for beep functionality
+import winsound
 import subprocess
 import os
 import argparse
 import pythoncom
-import requests  # For ElevenLabs API
+import requests
 import io
 import tempfile
 # import elevenlabs 
@@ -18,37 +18,30 @@ PYDUB_AVAILABLE = False
 
 class TextToSpeech:
     def __init__(self, use_google_cloud=False, google_cloud_credentials=None):
-        # Google Cloud configuration
+        # Initialize text-to-speech with optional Google Cloud support
         self.use_google_cloud = use_google_cloud
         self.google_cloud_credentials = google_cloud_credentials
         
         if self.use_google_cloud:
-            # Initialize Google Cloud Text-to-Speech client
             self.client = texttospeech.TextToSpeechClient.from_service_account_json(self.google_cloud_credentials)
         
         try:
-            # Initialize the SAPI voice directly using win32com
             self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
             
-            # Try to select a more natural-sounding voice if available
+            # Select the most natural-sounding voice available
             voices = self.speaker.GetVoices()
             for i in range(voices.Count):
                 voice = voices.Item(i)
-                # Prefer Microsoft Ryan (Natural) voice if available
                 if "Ryan" in voice.GetDescription() and "Natural" in voice.GetDescription():
                     self.speaker.Voice = voice
                     print(f"Using voice: {voice.GetDescription()}")
                     break
-                # Fall back to Zira or David if Ryan not available
                 elif "Zira" in voice.GetDescription() or "David" in voice.GetDescription():
                     self.speaker.Voice = voice
                     print(f"Using voice: {voice.GetDescription()}")
                     break
             
-            # Set a slightly slower rate for more natural speech
-            self.speaker.Rate = 1  # Range is -10 to 10, with 0 being default
-            
-            # Flag to control speech interruption
+            self.speaker.Rate = 1
             self.speaking = False
         except Exception as e:
             print(f"Error initializing text-to-speech: {str(e)}")
@@ -64,42 +57,31 @@ class TextToSpeech:
             self.speaking = True
             print(f"Speaking with Google Cloud: {text[:50]}..." if len(text) > 50 else f"Speaking with Google Cloud: {text}")
             
-            # Set the text input to be synthesized
             synthesis_input = texttospeech.SynthesisInput(text=text)
-            
-            # Build the voice request
             voice = texttospeech.VoiceSelectionParams(
                 language_code="en-US",
                 ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
             )
-            
-            # Select the type of audio file you want returned
             audio_config = texttospeech.AudioConfig(
                 audio_encoding=texttospeech.AudioEncoding.MP3
             )
             
-            # Perform the text-to-speech request
             response = self.client.synthesize_speech(
                 input=synthesis_input, voice=voice, audio_config=audio_config
             )
             
-            # Save to temporary file and play with Windows Media Player
             with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
                 temp_file.write(response.audio_content)
                 temp_file_path = temp_file.name
             
-            # Play using default media player
             os.startfile(temp_file_path)
-            
-            # Wait for audio to finish (approximate)
             estimated_duration = len(text) / 15
             time.sleep(estimated_duration)
             
-            # Try to delete the temp file after playing
             try:
                 os.unlink(temp_file_path)
             except:
-                pass  # File might be locked by media player
+                pass
             
             self.speaking = False
             return True
@@ -109,28 +91,23 @@ class TextToSpeech:
             return self.speak_windows(text)
     
     def speak_windows(self, text):
-        """Use Windows TTS to speak text"""
+        """Use Windows TTS to speak text with improved pronunciation"""
         if self.speaker:
-            # Set speaking flag
             self.speaking = True
             
-            # Fix common pronunciation issues
             pronunciation_fixes = {
                 "AI": "A.I.",
                 "API": "A.P.I.",
                 "SQL": "sequel",
                 "GUI": "gooey",
-                # Add more word fixes as needed
             }
             
             for word, pronunciation in pronunciation_fixes.items():
                 text = text.replace(f" {word} ", f" <phoneme alphabet=\"ipa\" ph=\"{pronunciation}\"> {word} </phoneme> ")
             
-            # Speak the text
             print(f"Speaking with Windows TTS: {text[:50]}..." if len(text) > 50 else f"Speaking with Windows TTS: {text}")
             self.speaker.Speak(text)
             
-            # Reset speaking flag
             self.speaking = False
             return True
         else:
@@ -138,8 +115,8 @@ class TextToSpeech:
             return False
     
     def speak(self, text, humanize=False):
+        """Main method to speak text using either Google Cloud or Windows TTS"""
         try:
-            # Use Google Cloud if enabled
             if self.use_google_cloud:
                 return self.speak_google_cloud(text)
             else:
@@ -151,12 +128,10 @@ class TextToSpeech:
 
     @staticmethod
     def download_voice():
-        """Attempt to download additional voices using PowerShell"""
+        """Download additional Windows voices through PowerShell"""
         print("Attempting to download additional voices...")
         try:
-            # PowerShell command to open the Speech settings
             ps_command = """
-            # Open Settings to Speech page
             Start-Process "ms-settings:speech"
             
             Write-Host "Settings app opened to Speech page."
@@ -166,7 +141,6 @@ class TextToSpeech:
             Write-Host "3. Click 'Add' to download and install the voices"
             """
             
-            # Execute PowerShell command
             subprocess.run(["powershell", "-Command", ps_command], 
                           capture_output=True, text=True)
             
@@ -180,23 +154,18 @@ class TextToSpeech:
             return False
     
     def stop_speaking(self):
-        """Stop the current speech"""
+        """Stop the current speech output"""
         if self.speaker and self.speaking:
-            self.speaker.Speak("", 3)  # 3 is SVSFPurgeBeforeSpeak | SVSFIsXML
+            self.speaker.Speak("", 3)
             self.speaking = False
             print("Speech stopped.")
     
     def play_beep(self):
         """Play a beep sound to indicate listening has started"""
-        # Frequency of 800 Hz, duration of 300 milliseconds
         winsound.Beep(800, 300)
     
     def set_speech_rate(self, rate):
-        """Adjust the speech rate
-        
-        Args:
-            rate: Integer from -10 (very slow) to 10 (very fast)
-        """
+        """Adjust the speech rate (-10 to 10)"""
         if self.speaker:
             if rate < -10:
                 rate = -10
@@ -208,11 +177,7 @@ class TextToSpeech:
         return False
 
     def set_volume(self, volume):
-        """Adjust the speech volume
-        
-        Args:
-            volume: Integer from 0 (silent) to 100 (loudest)
-        """
+        """Adjust the speech volume (0 to 100)"""
         if self.speaker:
             if volume < 0:
                 volume = 0
@@ -224,14 +189,7 @@ class TextToSpeech:
         return False
     
     def emphasize_text(self, text):
-        """Add emphasis to important words in the text
-        
-        Args:
-            text: The text to be spoken
-        Returns:
-            Text with SSML emphasis tags
-        """
-        # Words to emphasize
+        """Add emphasis to important words in the text using SSML"""
         emphasis_words = ["important", "critical", "urgent", "warning", "danger", "remember"]
         
         for word in emphasis_words:
@@ -240,12 +198,7 @@ class TextToSpeech:
         return text
     
     def speak_with_emotion(self, text, emotion="neutral"):
-        """Speak text with a specific emotion
-        
-        Args:
-            text: The text to be spoken
-            emotion: One of "happy", "sad", "angry", "neutral"
-        """
+        """Speak text with a specific emotion (happy, sad, angry, neutral)"""
         if not self.speaker:
             return False
             

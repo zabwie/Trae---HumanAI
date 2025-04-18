@@ -4,7 +4,12 @@ import datetime
 import time
 
 class MemoryManager:
-    def __init__(self, memory_dir="h:\\VSCodeProjects\\HumanAI\\python\\memories"):
+    def __init__(self, memory_dir=None):
+        # Use user's home directory if no specific directory is provided
+        if memory_dir is None:
+            home_dir = os.path.expanduser("~")
+            memory_dir = os.path.join(home_dir, "HumanAI", "memories")
+        
         self.memory_dir = memory_dir
         
         # Create memories directory if it doesn't exist

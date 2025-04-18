@@ -1,8 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+block_cipher = None
 
 a = Analysis(
-    ['h:\\VSCodeProjects\\HumanAI\\python\\text_to_speech_win.py'],
+    ['python/text_to_speech_win.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -11,8 +12,10 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
     noarchive=False,
-    optimize=0,
 )
 pyz = PYZ(a.pure)
 

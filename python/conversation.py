@@ -7,6 +7,7 @@ from system_control import SystemController
 from email_control import EmailController
 from database_manager import DatabaseManager
 from task_manager import TaskManager
+from data_ai import DataAI
 import time
 import random
 import threading
@@ -95,6 +96,7 @@ def have_conversation(model="mistral", system_prompt=None):
         email_controller = EmailController()
         db_manager = DatabaseManager()
         task_manager = TaskManager()
+        data_ai = DataAI()
         
         # Load saved email account if exists
         saved_email = db_manager.get_preference("last_used_email")
@@ -905,6 +907,84 @@ def have_conversation(model="mistral", system_prompt=None):
                     tts.speak("Files organized successfully.")
                 else:
                     tts.speak("I couldn't organize the files. Please try again.")
+                continue
+            
+            # Check for new data and AI features
+            if "summarize" in user_input.lower() and "text" in user_input.lower():
+                tts.speak("Please provide the text you'd like me to summarize.")
+                text = stt.start_listening(tts=tts)
+                if text:
+                    summary = data_ai.summarize_text(text)
+                    tts.speak(f"Here's the summary: {summary}")
+                continue
+                
+            elif "explain" in user_input.lower() and "document" in user_input.lower():
+                tts.speak("Please provide the document you'd like me to explain.")
+                text = stt.start_listening(tts=tts)
+                if text:
+                    explanation = data_ai.explain_document(text)
+                    tts.speak(f"Here's the explanation: {explanation['summary']}")
+                    if explanation['key_points']:
+                        tts.speak("Key points:")
+                        for point in explanation['key_points']:
+                            tts.speak(point)
+                continue
+                
+            elif "run code" in user_input.lower() or "execute code" in user_input.lower():
+                tts.speak("Please provide the Python code you'd like me to run.")
+                code = stt.start_listening(tts=tts)
+                if code:
+                    result = data_ai.run_python_code(code)
+                    if result['success']:
+                        tts.speak("Code executed successfully.")
+                    else:
+                        tts.speak(f"Error executing code: {result['error']}")
+                continue
+                
+            elif "remember my preference" in user_input.lower():
+                tts.speak("What category is this preference for?")
+                category = stt.start_listening(tts=tts)
+                tts.speak("What's the preference name?")
+                preference = stt.start_listening(tts=tts)
+                tts.speak("What's the preference value?")
+                value = stt.start_listening(tts=tts)
+                
+                if category and preference and value:
+                    data_ai.learn_preference(category, preference, value)
+                    tts.speak(f"I've remembered your preference for {preference} in {category}.")
+                continue
+                
+            elif "track my habit" in user_input.lower():
+                tts.speak("What habit would you like to track?")
+                habit = stt.start_listening(tts=tts)
+                tts.speak("How long did you spend on this habit in minutes?")
+                duration = stt.start_listening(tts=tts)
+                tts.speak("Any notes about this habit?")
+                notes = stt.start_listening(tts=tts)
+                
+                if habit and duration:
+                    try:
+                        duration = int(duration)
+                        data_ai.track_habit(habit, duration, notes)
+                        tts.speak(f"I've tracked your {habit} habit for {duration} minutes.")
+                    except ValueError:
+                        tts.speak("Please provide a valid duration in minutes.")
+                continue
+                
+            elif "categorize" in user_input.lower() and "text" in user_input.lower():
+                tts.speak("Please provide the text you'd like me to categorize.")
+                text = stt.start_listening(tts=tts)
+                if text:
+                    categories = data_ai.auto_categorize(text)
+                    tts.speak("Here are the categories and tags I found:")
+                    if categories['categories']:
+                        tts.speak("Categories:")
+                        for category in categories['categories']:
+                            tts.speak(category)
+                    if categories['tags']:
+                        tts.speak("Tags:")
+                        for tag in categories['tags']:
+                            tts.speak(tag)
                 continue
             
             # Log command execution
