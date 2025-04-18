@@ -1,6 +1,6 @@
 # Trae - HumanAI
 
-![Trae Logo](assets/trae_logo.png)
+![Trae Logo](assets\trae_logo.png)
 
 Trae is an advanced personal AI assistant that combines natural language processing, system control, and task management capabilities. It features voice interaction, memory management, and a wide range of system control functions.
 
